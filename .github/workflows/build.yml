@@ -1,0 +1,51 @@
+name: Build llama.cpp MTP
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-cuda:
+    runs-on: ubuntu-latest
+    container: nvidia/cuda:12.4.0-devel-ubuntu22.04
+    
+    steps:
+      - name: Checkout am17an/llama.cpp mtp-clean branch
+        uses: actions/checkout@v4
+        with:
+          repository: am17an/llama.cpp
+          ref: mtp-clean
+          path: llama.cpp
+          
+      - name: Install dependencies
+        run: |
+          apt-get update && apt-get install -y \
+            cmake \
+            build-essential \
+            python3 \
+            python3-pip
+          
+      - name: Configure CMake
+        run: |
+          cmake llama.cpp \
+            -B llama.cpp/build \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DGGML_CUDA=ON \
+            -DCMAKE_BUILD_TYPE=Release
+          
+      - name: Build
+        run: |
+          cmake --build llama.cpp/build --config Release -j $(nproc) --clean-first --target llama-cli llama-server
+          
+      - name: Package
+        run: |
+          mkdir -p artifacts
+          cp llama.cpp/build/bin/llama-* artifacts/
+          ls -la artifacts/
+          
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: llama-mtp-binaries-cuda
+          path: artifacts/
