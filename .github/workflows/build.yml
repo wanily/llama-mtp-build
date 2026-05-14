@@ -58,12 +58,15 @@ jobs:
         run: choco install ninja -y
           
       - name: Configure CMake
+        shell: cmd
         run: cmake llama.cpp -B llama.cpp/build -G "Ninja Multi-Config" -DBUILD_SHARED_LIBS=OFF -DLLAMA_BUILD_SERVER=ON -DCMAKE_BUILD_TYPE=Release
           
       - name: Build
-        run: cmake --build llama.cpp/build --config Release -j %NUMBER_OF_PROCESSORS% --clean-first --target llama-cli llama-server
+        shell: cmd
+        run: cmake --build llama.cpp/build --config Release --clean-first --target llama-cli llama-server
           
       - name: Package
+        shell: cmd
         run: |
           mkdir artifacts
           copy llama.cpp\build\bin\Release\llama-cli.exe artifacts\
@@ -93,20 +96,23 @@ jobs:
       - name: Install Ninja
         run: choco install ninja -y
           
-      - name: Install CUDA Toolkit 12.4
+      - name: Install CUDA Toolkit 12.4.0
         uses: Jimver/cuda-toolkit@v0.2.16
         with:
-          cuda: "12.4"
+          cuda: 12.4.0
           
       - name: Configure CMake
+        shell: cmd
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
           cmake llama.cpp -B llama.cpp/build -G "Ninja Multi-Config" -DBUILD_SHARED_LIBS=OFF -DLLAMA_BUILD_SERVER=ON -DGGML_CUDA=ON -DCMAKE_BUILD_TYPE=Release
           
       - name: Build
-        run: cmake --build llama.cpp/build --config Release -j %NUMBER_OF_PROCESSORS% --clean-first --target llama-cli llama-server
+        shell: cmd
+        run: cmake --build llama.cpp/build --config Release --clean-first --target llama-cli llama-server
           
       - name: Package
+        shell: cmd
         run: |
           mkdir artifacts
           copy llama.cpp\build\bin\Release\llama-cli.exe artifacts\
