@@ -51,76 +51,35 @@ jobs:
           ref: mtp-clean
           path: llama.cpp
           
-      - name: Install CMake
-        uses: lukka/get-cmake@latest
-        
-      - name: Install Ninja
-        run: choco install ninja -y
+      - name: Install MSYS2
+        uses: numfocus-psc/-msys2-action@master
+        with:
+          install: >-
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-make
+          path-type: inherit
           
-      - name: Configure CMake
-        shell: cmd
-        run: cmake llama.cpp -B llama.cpp/build -G "Ninja Multi-Config" -DBUILD_SHARED_LIBS=OFF -DLLAMA_BUILD_SERVER=ON -DCMAKE_BUILD_TYPE=Release
+      - name: Configure CMake (MSYS2 MinGW)
+        shell: msys2 {0}
+        run: |
+          cmake llama.cpp -B llama.cpp/build -G "MinGW Makefiles" -DBUILD_SHARED_LIBS=OFF -DLLAMA_BUILD_SERVER=ON -DCMAKE_BUILD_TYPE=Release
           
       - name: Build
-        shell: cmd
-        run: cmake --build llama.cpp/build --config Release --clean-first --target llama-cli llama-server
+        shell: msys2 {0}
+        run: |
+          cmake --build llama.cpp/build --config Release --clean-first --target llama-cli llama-server
           
       - name: Package
-        shell: cmd
+        shell: msys2 {0}
         run: |
-          mkdir artifacts
-          copy llama.cpp\build\bin\Release\llama-cli.exe artifacts\
-          copy llama.cpp\build\bin\Release\llama-server.exe artifacts\
-          dir artifacts
+          mkdir -p artifacts
+          cp llama.cpp/build/bin/llama-cli.exe artifacts/
+          cp llama.cpp/build/bin/llama-server.exe artifacts/
+          ls -la artifacts/
           
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: llama-mtp-binaries-windows
-          path: artifacts/
-
-  build-windows-cuda:
-    runs-on: windows-2022
-    
-    steps:
-      - name: Checkout am17an/llama.cpp mtp-clean branch
-        uses: actions/checkout@v4
-        with:
-          repository: am17an/llama.cpp
-          ref: mtp-clean
-          path: llama.cpp
-          
-      - name: Install CMake
-        uses: lukka/get-cmake@latest
-        
-      - name: Install Ninja
-        run: choco install ninja -y
-          
-      - name: Install CUDA Toolkit 12.4.0
-        uses: Jimver/cuda-toolkit@v0.2.16
-        with:
-          cuda: 12.4.0
-          
-      - name: Configure CMake
-        shell: cmd
-        run: |
-          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
-          cmake llama.cpp -B llama.cpp/build -G "Ninja Multi-Config" -DBUILD_SHARED_LIBS=OFF -DLLAMA_BUILD_SERVER=ON -DGGML_CUDA=ON -DCMAKE_BUILD_TYPE=Release
-          
-      - name: Build
-        shell: cmd
-        run: cmake --build llama.cpp/build --config Release --clean-first --target llama-cli llama-server
-          
-      - name: Package
-        shell: cmd
-        run: |
-          mkdir artifacts
-          copy llama.cpp\build\bin\Release\llama-cli.exe artifacts\
-          copy llama.cpp\build\bin\Release\llama-server.exe artifacts\
-          dir artifacts
-          
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: llama-mtp-binaries-windows-cuda
           path: artifacts/
