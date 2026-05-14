@@ -6,7 +6,7 @@ on:
     branches: [ main ]
 
 jobs:
-  build-cuda:
+  build-linux-cuda:
     runs-on: ubuntu-latest
     container: nvidia/cuda:12.4.0-devel-ubuntu22.04
     
@@ -47,5 +47,100 @@ jobs:
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: llama-mtp-binaries-cuda
+          name: llama-mtp-binaries-linux-cuda
+          path: artifacts/
+
+  build-windows:
+    runs-on: windows-2022
+    
+    steps:
+      - name: Checkout am17an/llama.cpp mtp-clean branch
+        uses: actions/checkout@v4
+        with:
+          repository: am17an/llama.cpp
+          ref: mtp-clean
+          path: llama.cpp
+          
+      - name: Install CMake
+        uses: lukka/get-cmake@latest
+        
+      - name: Install Ninja
+        run: |
+          choco install ninja -y
+          
+      - name: Configure CMake
+        run: |
+          cmake llama.cpp ^
+            -B llama.cpp/build ^
+            -G "Ninja Multi-Config" ^
+            -DBUILD_SHARED_LIBS=OFF ^
+            -DLLAMA_BUILD_SERVER=ON ^
+            -DCMAKE_BUILD_TYPE=Release
+          
+      - name: Build
+        run: |
+          cmake --build llama.cpp/build --config Release -j %NUMBER_OF_PROCESSORS% --clean-first --target llama-cli llama-server
+          
+      - name: Package
+        run: |
+          mkdir -p artifacts
+          copy llama.cpp\build\bin\Release\llama-cli.exe artifacts\
+          copy llama.cpp\build\bin\Release\llama-server.exe artifacts\
+          dir artifacts\
+          
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: llama-mtp-binaries-windows
+          path: artifacts/
+
+  build-windows-cuda:
+    runs-on: windows-2022
+    
+    steps:
+      - name: Checkout am17an/llama.cpp mtp-clean branch
+        uses: actions/checkout@v4
+        with:
+          repository: am17an/llama.cpp
+          ref: mtp-clean
+          path: llama.cpp
+          
+      - name: Install CMake
+        uses: lukka/get-cmake@latest
+        
+      - name: Install Ninja
+        run: |
+          choco install ninja -y
+          
+      - name: Install CUDA Toolkit 12.4
+        uses: Jimver/cuda-toolkit@v0.2.16
+        with:
+          cuda: "12.4"
+          
+      - name: Configure CMake
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
+          cmake llama.cpp ^
+            -B llama.cpp/build ^
+            -G "Ninja Multi-Config" ^
+            -DBUILD_SHARED_LIBS=OFF ^
+            -DLLAMA_BUILD_SERVER=ON ^
+            -DGGML_CUDA=ON ^
+            -DCMAKE_BUILD_TYPE=Release
+          
+      - name: Build
+        run: |
+          cmake --build llama.cpp/build --config Release -j %NUMBER_OF_PROCESSORS% --clean-first --target llama-cli llama-server
+          
+      - name: Package
+        run: |
+          mkdir -p artifacts
+          copy llama.cpp\build\bin\Release\llama-cli.exe artifacts\
+          copy llama.cpp\build\bin\Release\llama-server.exe artifacts\
+          dir artifacts\
+          
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: llama-mtp-binaries-windows-cuda
           path: artifacts/
